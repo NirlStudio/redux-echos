@@ -1,2 +1,2 @@
 # redux-echos
-A lightweight pattern to decouple and serialise state dependencies
+A lightweight redux middleware to decouple and serialise state dependencies.
