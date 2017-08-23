@@ -1,0 +1,35 @@
+{
+  "name": "redux-echos",
+  "version": "0.2.1",
+  "description": "A lightweight pattern to decouple state dependency.",
+  "main": "index.js",
+  "scripts": {
+    "test": "./node_modules/mocha/bin/mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NirlStudio/redux-echos.git"
+  },
+  "keywords": [
+    "react",
+    "redux",
+    "state",
+    "dependency"
+  ],
+  "author": "Leevi Li",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/NirlStudio/redux-echos/issues"
+  },
+  "homepage": "https://github.com/NirlStudio/redux-echos#readme",
+  "standard": {
+    "globals": [
+      "describe",
+      "it"
+    ]
+  },
+  "devDependencies": {
+    "mocha": "^3.5.0"
+  },
+  "dependencies": {}
+}
