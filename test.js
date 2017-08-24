@@ -13,31 +13,40 @@ try {
 describe('module', function () {
   describe('exports', function () {
     it('should be a middleware (function)', function () {
-      assert(typeof echos === 'function')
+      assert.equal(typeof echos, 'function')
     })
     it('should have string ActionTypeSqueak', function () {
-      assert(typeof echos.ActionTypeSqueak === 'string')
+      assert.equal(typeof echos.ActionTypeSqueak, 'string')
     })
     it('should have function thunk', function () {
-      assert(typeof echos.thunk === 'function')
+      assert.equal(typeof echos.thunk, 'function')
     })
     it('should have function squeak', function () {
-      assert(typeof echos.squeak === 'function')
+      assert.equal(typeof echos.squeak, 'function')
     })
     it('should have function thunkEnabled', function () {
-      assert(typeof echos.thunkEnabled === 'function')
+      assert.equal(typeof echos.thunkEnabled, 'function')
     })
     it('should have function enableThunk', function () {
-      assert(typeof echos.enableThunk === 'function')
+      assert.equal(typeof echos.enableThunk, 'function')
     })
     it('should have function disableThunk', function () {
-      assert(typeof echos.disableThunk === 'function')
+      assert.equal(typeof echos.disableThunk, 'function')
     })
     it('should have function echos', function () {
-      assert(typeof echos.echos === 'function')
+      assert.equal(typeof echos.echos, 'function')
     })
     it('should have function echo', function () {
-      assert(typeof echos.echos === 'function')
+      assert.equal(typeof echos.echos, 'function')
+    })
+    it('should have function translators', function () {
+      assert.equal(typeof echos.translators, 'function')
+    })
+    it('should have function register', function () {
+      assert.equal(typeof echos.register, 'function')
+    })
+    it('should have function unregister', function () {
+      assert.equal(typeof echos.unregister, 'function')
     })
   })
 })
@@ -45,21 +54,21 @@ describe('module', function () {
 describe('Action Mode', function () {
   describe('Automatic', function () {
     hasThunk ? it('should enable thunk w/ redux-thunk.', function () {
-      assert(echos.thunkEnabled() === true)
+      assert.equal(echos.thunkEnabled(), true)
     }) : it('should disable thunk w/o redux-thunk.', function () {
-      assert(echos.thunkEnabled() === false)
+      assert.equal(echos.thunkEnabled(), false)
     })
   })
   describe('enableThunk', function () {
     it('should enable thunk when explicitly requested.', function () {
       echos.enableThunk()
-      assert(echos.thunkEnabled() === true)
+      assert.equal(echos.thunkEnabled(), true)
     })
   })
   describe('disableThunk', function () {
     it('should disable thunk when explicitly requested.', function () {
       echos.disableThunk()
-      assert(echos.thunkEnabled() === false)
+      assert.equal(echos.thunkEnabled(), false)
     })
   })
 })
@@ -69,31 +78,31 @@ describe('Action Creators', function () {
     it('should return a thunk function.', function (done) {
       var a = {type: 'test'}
       var t = echos.thunk(a)
-      assert(typeof t === 'function')
+      assert.equal(typeof t, 'function', 'does not return a function.')
 
       var dispatched = null
       var p = t(function (action) { dispatched = action })
-      assert(p instanceof Promise)
+      assert(p instanceof Promise, 'thunk function does not return a promise.')
 
       p.then(function (action) {
         if (!dispatched) {
-          done('original action has not been dispatched.', a)
+          done('original action has not been dispatched.')
         } else if (action !== a) {
-          done('missing original action', a, action)
+          done('missing original action')
         } else {
           done()
         }
       })
-      assert(Array.isArray(echos.echos()))
+      assert(Array.isArray(echos.echos()), 'echo has not been queued.')
     })
   })
   describe('squeak', function () {
     it('should return an action object.', function () {
       var a = {type: 'test'}
       var s = echos.squeak(a)
-      assert(typeof s === 'object')
-      assert(s.type === echos.ActionTypeSqueak)
-      assert(s.action === a)
+      assert.equal(typeof s, 'object', 'does not return an action object.')
+      assert.equal(s.type, echos.ActionTypeSqueak, 'invalid action type')
+      assert.equal(s.action, a, 'invalid inner action.')
     })
   })
   describe('echo', function () {
@@ -101,26 +110,98 @@ describe('Action Creators', function () {
       var a = {type: 'test'}
       echos.disableThunk()
       var s = echos.echo(a)
-      assert(typeof s === 'object')
-      assert(s.type === echos.ActionTypeSqueak)
-      assert(s.action === a)
+      assert.equal(typeof s, 'object', 'does not return an action object.')
+      assert.equal(s.type, echos.ActionTypeSqueak, 'invalid action type')
+      assert.equal(s.action, a, 'invalid inner action.')
     })
     it('should return a thunk function when thunk is enabled', function (done) {
       var a = {type: 'test'}
       echos.enableThunk()
       var t = echos.echo(a)
-      assert(typeof t === 'function')
+      assert.equal(typeof t, 'function', 'does not return a function.')
 
       var p = t(function (action) {
-        assert(action === a, 'the original action should be dispatched.')
+        assert(action === a, 'missing original action in dispatching.')
       })
       assert(p instanceof Promise)
 
       p.then(function (action) {
-        assert(action === a, 'the original action should be resolved.')
+        assert(action === a, 'missing original action in resolving.')
         done()
       })
-      assert(Array.isArray(echos.echos()))
+      assert(Array.isArray(echos.echos()), 'echo has not been queued.')
+    })
+  })
+})
+
+describe('Translators', function () {
+  var t0 = function () {}
+  var t1 = function () {}
+  var t2 = function () {}
+  describe('register', function () {
+    it('should accept a function as translator', function () {
+      echos.register('test', t0)
+      var m = echos.translators()
+      var l = echos.translators('test')
+      assert.equal(m['test'], l, 'wrong translator list.')
+      assert(Array.isArray(l), 'invalid translator list.')
+      assert.equal(l.length, 1, 'wrong translator number.')
+      assert.equal(l[0], t0, 'invalid translator.')
+    })
+    it('should accept an array of function as translators', function () {
+      echos.register('test', [t1, t2])
+
+      var m = echos.translators()
+      var l = echos.translators('test')
+      assert.equal(m['test'], l, 'wrong translator list.')
+      assert(Array.isArray(l), 'invalid translator list.')
+      assert.equal(l.length, 3, 'wrong translator number.')
+      assert.equal(l[0], t0, 'invalid translator (0).')
+      assert.equal(l[1], t1, 'invalid translator (1).')
+      assert.equal(l[2], t2, 'invalid translator (2).')
+    })
+  })
+  describe('unregister', function () {
+    it('should accept a translator function to unregister', function () {
+      echos.unregister(t1)
+
+      var m = echos.translators()
+      var l = echos.translators('test')
+      assert.equal(m['test'], l, 'wrong translator list.')
+      assert(Array.isArray(l), 'invalid translator list.')
+      assert.equal(l.length, 2, 'wrong translator number.')
+      assert.equal(l[0], t0, 'invalid translator (0).')
+      assert.equal(l[1], t2, 'invalid translator (1).')
+    })
+    it('should accept an array of translator functions to unregister', function () {
+      echos.unregister([t0, t2])
+
+      var m = echos.translators()
+      var l = echos.translators('test')
+      assert.equal(m['test'], l, 'wrong translator list.')
+      assert(Array.isArray(l), 'invalid translator list.')
+      assert.equal(l.length, 0, 'wrong translator number.')
+    })
+    it('should unregister translator for a specific action type', function () {
+      echos.register('test1', [t0, t1])
+      echos.register('test2', [t0, t2])
+      var l1 = echos.translators('test1')
+      var l2 = echos.translators('test2')
+      assert.equal(l1.length, 2, 'invalid translators for test1')
+      assert.equal(l2.length, 2, 'invalid translators for test2')
+
+      echos.unregister(t0, 'test2')
+      assert.equal(l1.length, 2, 'stage1: invalid translator number for test1')
+      assert.equal(l1[0], t0, 'stage1: invalid test1 (0)')
+      assert.equal(l1[1], t1, 'stage1: invalid test1 (1)')
+      assert.equal(l2.length, 1, 'stage1: invalid translator number for test2')
+      assert.equal(l2[0], t2, 'stage1: invalid test2 (0)')
+
+      echos.unregister([t1, t2], 'test1')
+      assert.equal(l1.length, 1, 'stage2: invalid translator number for test1')
+      assert.equal(l1[0], t0, 'stage2: invalid test1 (0)')
+      assert.equal(l2.length, 1, 'stage2: invalid translator number for test2')
+      assert.equal(l2[0], t2, 'stage2: invalid test2 (0)')
     })
   })
 })
@@ -144,7 +225,56 @@ describe('Middleware', function () {
       echos(store)(next)(action)
     })
   })
-  describe('receiving a unknown action', function () {
+  describe('receiving a common action', function () {
+    it('may translate it to no echo.', function () {
+      echos.register('SRC_ACTION1', function (action) {})
+      echos({dispatch: function () {}})(function () {})({
+        type: 'SRC_ACTION1'
+      })
+      assert.equal(echos.echos(), null)
+    })
+    it('may translate it to an echo action.', function (done) {
+      var a = {type: 'echo', value: 'a1'}
+      echos.register('SRC_ACTION2', function () { return a })
+      echos({
+        dispatch: function (action) {
+          assert.equal(action, a, 'wrong echo action')
+          done()
+        }
+      })(function () {})({
+        type: 'SRC_ACTION2'
+      })
+      assert(Array.isArray(echos.echos()), 'missing echos.')
+      assert.equal(echos.echos().length, 1, 'wrong echo number.')
+      assert.equal(echos.echos()[0].action, a, 'wrong echo action.')
+      assert.equal(typeof echos.echos()[0].dispatch, 'function',
+        'wrong echo dispatcher.')
+    })
+    it('may translate it to echo actions.', function (done) {
+      var a = {type: 'echo', value: 'a2'}
+      var b = {type: 'echo', value: 'b2'}
+      echos.register('SRC_ACTION3', function () { return [a, b] })
+      var counter = 0
+      echos({
+        dispatch: function (action) {
+          assert(action === a || action === b, 'wrong echo action')
+          counter += 1
+          if (counter === 2) {
+            done()
+          }
+        }
+      })(function () {})({
+        type: 'SRC_ACTION3'
+      })
+      assert(Array.isArray(echos.echos()), 'missing echos.')
+      assert.equal(echos.echos().length, 2, 'wrong echo number.')
+      assert.equal(echos.echos()[0].action, a, 'wrong echo a.')
+      assert.equal(typeof echos.echos()[0].dispatch, 'function',
+        'wrong echo a dispatcher.')
+      assert.equal(echos.echos()[1].action, b, 'wrong echo b.')
+      assert.equal(typeof echos.echos()[1].dispatch, 'function',
+        'wrong echo b dispatcher.')
+    })
     it('should pass it to next processor.', function () {
       var a = {type: 'test'}
       var store = {
@@ -153,10 +283,9 @@ describe('Middleware', function () {
         }
       }
       var next = function (action) {
-        assert(action === a, 'the original action is missing.')
+        assert.equal(action, a, 'the original action is missing.')
       }
-      var action = echos.squeak(a)
-      echos(store)(next)(action)
+      echos(store)(next)(a)
     })
   })
 })

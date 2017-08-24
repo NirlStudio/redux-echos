@@ -1,7 +1,7 @@
 {
   "name": "redux-echos",
-  "version": "0.2.2",
-  "description": "A lightweight pattern to decouple state dependency.",
+  "version": "0.3.2",
+  "description": "A lightweight redux middleware to decouple & serialise the dependency of sub-states.",
   "main": "index.js",
   "scripts": {
     "test": "mocha"
@@ -11,10 +11,10 @@
     "url": "git+https://github.com/NirlStudio/redux-echos.git"
   },
   "keywords": [
-    "react",
     "redux",
     "state",
-    "dependency"
+    "state-management",
+    "state-dependency"
   ],
   "author": "Leevi Li",
   "license": "BSD-2-Clause",

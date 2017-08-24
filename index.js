@@ -20,6 +20,7 @@ info('redux-echos: thunk mode is', thunkEnabled ? 'enabled.' : 'disabled.')
 
 // the echo store
 var echos = null
+var translatorMap = Object.create(null)
 
 // the echo dispatcher
 function dispatchEchos () {
@@ -49,6 +50,12 @@ function reflect (dispatch, action, resolve) {
   }
   info('redux-echos: action is queued:', action)
 }
+// reflect a series of actions.
+function reflectAll (dispatch, actions) {
+  for (var i = 0; i < actions.length; i++) {
+    reflect(dispatch, actions[i])
+  }
+}
 
 // the action for redux-thunk
 function thunk (action) {
@@ -67,12 +74,35 @@ function squeak (action) {
   }
 }
 
+function translatingWith (reflecting, reflectingAll) {
+  return function (action) {
+    var translators = translatorMap[action.type]
+    if (translators) {
+      for (var i = 0; i < translators.length; i++) {
+        var echo = translators[i](action)
+        if (Array.isArray(echo)) {
+          reflectingAll(echo)
+        } else if (echo) {
+          reflecting(echo)
+        }
+      }
+    }
+  }
+}
+
 function middleware (store) {
+  var dispatching = store.dispatch.bind(store)
+  var reflecting = reflect.bind(null, dispatching)
+  var reflectingAll = reflectAll.bind(null, dispatching)
+  var translating = translatingWith(reflecting, reflectingAll)
   return function (next) {
     return function (action) {
       if (action.type === ActionType) {
-        reflect(store.dispatch.bind(store), action.action)
+        // queue & suppress.
+        reflecting(action.action)
       } else {
+        // translate & forward
+        translating(action)
         next(action)
       }
     }
@@ -103,13 +133,54 @@ middleware.enableThunk = function () {
 middleware.disableThunk = function () {
   return (thunkEnabled = false)
 }
-// expose current echos to allow developers to do anything with them
+// expose current echos to be manipulated.
 middleware.echos = function () {
   return echos
 }
 // the auto-selected action creator
 middleware.echo = function (action) {
   return thunkEnabled ? thunk(action) : squeak(action)
+}
+// expose translators to be manipulated, even it's not suggested generally.
+middleware.translators = function (actionType) {
+  return actionType ? (translatorMap[actionType] || []) : translatorMap
+}
+// register a translator for a particular action.
+middleware.register = function (actionType, translator) {
+  var list = translatorMap[actionType]
+  if (!list) {
+    translatorMap[actionType] = list = []
+  }
+  var translators = Array.isArray(translator) ? translator : [translator]
+  for (var i = 0; i < translators.length; i++) {
+    if (typeof translators[i] === 'function') {
+      list.push(translators[i])
+    }
+  }
+}
+// unregister a translator for an action or for all actions.
+middleware.unregister = function (translator, actionType) {
+  var translators = Array.isArray(translator) ? translator : [translator]
+  var actionTypes = actionType ? [actionType]
+    : Object.getOwnPropertyNames(translatorMap)
+  for (var i = 0; i < actionTypes.length; i++) {
+    var list = translatorMap[actionTypes[i]]
+    if (list) {
+      var j = 0
+      while (j < list.length) {
+        var k = 0
+        for (; k < translators.length; k++) {
+          if (list[j] === translators[k]) {
+            list.splice(j, 1)
+            break
+          }
+        }
+        if (k >= translators.length) {
+          j += 1
+        }
+      }
+    }
+  }
 }
 
 // use the middleware as the default exports.
