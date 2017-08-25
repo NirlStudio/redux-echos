@@ -12,7 +12,7 @@ It helps to deal with the to-be-laterly-dispatched actions.
 ## Examples
 ### First of First, but not actually
 Apply echos as a middleware to the redux store.
-~~~~
+~~~~javascript
 import echos from 'redux-echos'
 
 const store = createStore(reducer, applyMiddleware(echos))
@@ -21,7 +21,7 @@ _note: this step may be safely skipped sometimes when redux-thunk is here._
 
 ### Action Forking
 An action may proactively create more actions.
-~~~~
+~~~~javascript
 import { echo } from 'redux-echos'
 
 dispatch(echo(action))
@@ -29,7 +29,7 @@ dispatch(echo(action))
 
 ### Action Translating
 A state may associate itself with another one which it depends on.
-~~~~
+~~~~javascript
 import { register } from 'redux-echos'
 
 register('The/Awesome/ACTION', (action, state) => ({
@@ -38,7 +38,7 @@ register('The/Awesome/ACTION', (action, state) => ({
 }))
 ~~~~
 or apply a selector to help the translator
-~~~~
+~~~~javascript
 register('The/Awesome/ACTION', (action, state) => ({
   type: 'I/Caught/YOU',
   some: state
@@ -52,7 +52,7 @@ register('The/Awesome/ACTION', (action, state) => ({
 ## API Reference
 ### Basics
 They should be enough for most scenarios.
-- default: (store) => () => (next) => (action) => { ... } - the middleware
+- default: (store) => () => (next) => (action) - the middleware
 - echo(action) - generate an echo action for an target action.
 - register(actionType, translator, selector) - register a translator function.
 
