@@ -74,12 +74,13 @@ function squeak (action) {
   }
 }
 
-function translatingWith (reflecting, reflectingAll) {
+function translatingWith (getState, reflecting, reflectingAll) {
   return function (action) {
+    var state = getState()
     var translators = translatorMap[action.type]
     if (translators) {
       for (var i = 0; i < translators.length; i++) {
-        var echo = translators[i](action)
+        var echo = translators[i](action, state)
         if (Array.isArray(echo)) {
           reflectingAll(echo)
         } else if (echo) {
@@ -91,10 +92,13 @@ function translatingWith (reflecting, reflectingAll) {
 }
 
 function middleware (store) {
+  // create context-bound functions
+  var getState = store.getState.bind(store)
   var dispatching = store.dispatch.bind(store)
   var reflecting = reflect.bind(null, dispatching)
   var reflectingAll = reflectAll.bind(null, dispatching)
-  var translating = translatingWith(reflecting, reflectingAll)
+  var translating = translatingWith(getState, reflecting, reflectingAll)
+  // return the handler generator
   return function (next) {
     return function (action) {
       if (action.type === ActionType) {

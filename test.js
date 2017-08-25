@@ -211,6 +211,7 @@ describe('Middleware', function () {
     it('should filter it out as an echo.', function (done) {
       var a = {type: 'test'}
       var store = {
+        getState: function () { return {} },
         dispatch: function (action) {
           assert(this === store, 'thisArg should be bound to store.')
           assert(action === a, 'the original action should be dispatched')
@@ -227,16 +228,27 @@ describe('Middleware', function () {
   })
   describe('receiving a common action', function () {
     it('may translate it to no echo.', function () {
-      echos.register('SRC_ACTION1', function (action) {})
-      echos({dispatch: function () {}})(function () {})({
+      echos.register('SRC_ACTION1', function (action, state) {
+        assert.equal(typeof action, 'object', 'invalid action.')
+        assert.equal(typeof state, 'object', 'invalid state object.')
+      })
+      echos({
+        getState: function () { return {} },
+        dispatch: function () {}
+      })(function () {})({
         type: 'SRC_ACTION1'
       })
       assert.equal(echos.echos(), null)
     })
     it('may translate it to an echo action.', function (done) {
       var a = {type: 'echo', value: 'a1'}
-      echos.register('SRC_ACTION2', function () { return a })
+      echos.register('SRC_ACTION2', function (action, state) {
+        assert.equal(typeof action, 'object', 'invalid action.')
+        assert.equal(typeof state, 'object', 'invalid state object.')
+        return a
+      })
       echos({
+        getState: function () { return {} },
         dispatch: function (action) {
           assert.equal(action, a, 'wrong echo action')
           done()
@@ -253,9 +265,14 @@ describe('Middleware', function () {
     it('may translate it to echo actions.', function (done) {
       var a = {type: 'echo', value: 'a2'}
       var b = {type: 'echo', value: 'b2'}
-      echos.register('SRC_ACTION3', function () { return [a, b] })
+      echos.register('SRC_ACTION3', function (action, state) {
+        assert.equal(typeof action, 'object', 'invalid action.')
+        assert.equal(typeof state, 'object', 'invalid state object.')
+        return [a, b]
+      })
       var counter = 0
       echos({
+        getState: function () { return {} },
         dispatch: function (action) {
           assert(action === a || action === b, 'wrong echo action')
           counter += 1
@@ -278,6 +295,7 @@ describe('Middleware', function () {
     it('should pass it to next processor.', function () {
       var a = {type: 'test'}
       var store = {
+        getState: function () { return {} },
         dispatch: function (action) {
           assert(false, 'the dispatch function should not be called.')
         }
