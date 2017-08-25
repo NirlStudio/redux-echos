@@ -37,7 +37,7 @@ describe('module', function () {
       assert.equal(typeof echos.echos, 'function')
     })
     it('should have function echo', function () {
-      assert.equal(typeof echos.echos, 'function')
+      assert.equal(typeof echos.echo, 'function')
     })
     it('should have function translators', function () {
       assert.equal(typeof echos.translators, 'function')
@@ -244,11 +244,13 @@ describe('Middleware', function () {
       var a = {type: 'echo', value: 'a1'}
       echos.register('SRC_ACTION2', function (action, state) {
         assert.equal(typeof action, 'object', 'invalid action.')
-        assert.equal(typeof state, 'object', 'invalid state object.')
+        assert.equal(state, 'value', 'invalid state value.')
         return a
+      }, function (state) {
+        return state.real
       })
       echos({
-        getState: function () { return {} },
+        getState: function () { return {real: 'value'} },
         dispatch: function (action) {
           assert.equal(action, a, 'wrong echo action')
           done()

@@ -80,7 +80,8 @@ function translatingWith (getState, reflecting, reflectingAll) {
     var translators = translatorMap[action.type]
     if (translators) {
       for (var i = 0; i < translators.length; i++) {
-        var echo = translators[i](action, state)
+        var echo = translators[i](action, translators[i].stateSelector
+            ? translators[i].stateSelector(state) : state)
         if (Array.isArray(echo)) {
           reflectingAll(echo)
         } else if (echo) {
@@ -150,16 +151,17 @@ middleware.translators = function (actionType) {
   return actionType ? (translatorMap[actionType] || []) : translatorMap
 }
 // register a translator for a particular action.
-middleware.register = function (actionType, translator) {
+middleware.register = function (actionType, translator, selector) {
   var list = translatorMap[actionType]
   if (!list) {
     translatorMap[actionType] = list = []
   }
   var translators = Array.isArray(translator) ? translator : [translator]
   for (var i = 0; i < translators.length; i++) {
-    if (typeof translators[i] === 'function') {
-      list.push(translators[i])
+    if (selector) {
+      translators[i].stateSelector = selector
     }
+    list.push(translators[i])
   }
 }
 // unregister a translator for an action or for all actions.
