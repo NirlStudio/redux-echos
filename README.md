@@ -72,7 +72,7 @@ register('The/Awesome/ACTION', translator, selector)
 ### Basics
 They should be enough for common scenarios.
 
-#### default exports: (store) => (next) => (action) =>
+#### default exports: middleware(store) => (next) => (action)
 the middleware
 
 #### echo(action)
@@ -84,7 +84,7 @@ register a translator function.
 ### Advanced
 They should be used with a little bit carefulness.
 
-#### thunk(action)
+#### thunk(action) => (dispatch)
 explicitly create a thunk as the echo action.
 
 #### squeak(action)
