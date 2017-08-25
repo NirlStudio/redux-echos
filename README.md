@@ -33,7 +33,7 @@ const reducer = (state, action) => {
       type: 'Do/This/Later',
       some: state.an.important.value
     })
-    return {...state, key: value}
+    return {...state, key: 'new-value'}
   }
   return state
 }
