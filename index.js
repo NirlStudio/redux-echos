@@ -74,6 +74,11 @@ function squeak (action) {
   }
 }
 
+// the auto-selected echo action creator
+function create (action) {
+  return thunkEnabled ? thunk(action) : squeak(action)
+}
+
 function translatingWith (getState, reflecting, reflectingAll) {
   return function (action) {
     var state = getState()
@@ -92,10 +97,14 @@ function translatingWith (getState, reflecting, reflectingAll) {
   }
 }
 
+// the default dispatcher bound to a store. So it's not safe if there're more
+// than one store existing.
+var dispatching
+
 function middleware (store) {
   // create context-bound functions
+  dispatching = store.dispatch.bind(store)
   var getState = store.getState.bind(store)
-  var dispatching = store.dispatch.bind(store)
   var reflecting = reflect.bind(null, dispatching)
   var reflectingAll = reflectAll.bind(null, dispatching)
   var translating = translatingWith(getState, reflecting, reflectingAll)
@@ -121,6 +130,7 @@ middleware.ActionTypeSqueak = ActionType
 // export raw action creators
 middleware.thunk = thunk
 middleware.squeak = squeak
+middleware.create = create
 
 // explicitiy choose the work mode.
 middleware.thunkEnabled = function () {
@@ -142,9 +152,9 @@ middleware.disableThunk = function () {
 middleware.echos = function () {
   return echos
 }
-// the auto-selected action creator
+// create & dispatch an echo action to the default store.
 middleware.echo = function (action) {
-  return thunkEnabled ? thunk(action) : squeak(action)
+  return dispatching(create(action))
 }
 // expose translators to be manipulated, even it's not suggested generally.
 middleware.translators = function (actionType) {

@@ -24,6 +24,9 @@ describe('module', function () {
     it('should have function squeak', function () {
       assert.equal(typeof echos.squeak, 'function')
     })
+    it('should have function create', function () {
+      assert.equal(typeof echos.create, 'function')
+    })
     it('should have function thunkEnabled', function () {
       assert.equal(typeof echos.thunkEnabled, 'function')
     })
@@ -105,11 +108,11 @@ describe('Action Creators', function () {
       assert.equal(s.action, a, 'invalid inner action.')
     })
   })
-  describe('echo', function () {
+  describe('create', function () {
     it('should return an action object when thunk is disabled.', function () {
       var a = {type: 'test'}
       echos.disableThunk()
-      var s = echos.echo(a)
+      var s = echos.create(a)
       assert.equal(typeof s, 'object', 'does not return an action object.')
       assert.equal(s.type, echos.ActionTypeSqueak, 'invalid action type')
       assert.equal(s.action, a, 'invalid inner action.')
@@ -117,7 +120,7 @@ describe('Action Creators', function () {
     it('should return a thunk function when thunk is enabled', function (done) {
       var a = {type: 'test'}
       echos.enableThunk()
-      var t = echos.echo(a)
+      var t = echos.create(a)
       assert.equal(typeof t, 'function', 'does not return a function.')
 
       var p = t(function (action) {
@@ -130,6 +133,19 @@ describe('Action Creators', function () {
         done()
       })
       assert(Array.isArray(echos.echos()), 'echo has not been queued.')
+    })
+  })
+  describe('echo', function () {
+    it('should dispatch an echo action into the current store.', function () {
+      var counter = 0
+      echos({
+        getState: function () {},
+        dispatch: function (action) {
+          counter += 1
+        }
+      })(function () {})
+      echos.echo({type: 'test'})
+      assert.equal(counter, 1)
     })
   })
 })
