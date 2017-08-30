@@ -79,12 +79,16 @@ describe('Action Mode', function () {
 describe('Action Creators', function () {
   describe('thunk', function () {
     it('should return a thunk function.', function (done) {
+      var sa = {type: 'source'}
       var a = {type: 'test'}
-      var t = echos.thunk(a)
+      var t = echos.thunk(a, sa)
       assert.equal(typeof t, 'function', 'does not return a function.')
 
       var dispatched = null
-      var p = t(function (action) { dispatched = action })
+      var p = t(function (action) {
+        assert.equal(action.echoSource, sa, 'invalid source action')
+        dispatched = action
+      })
       assert(p instanceof Promise, 'thunk function does not return a promise.')
 
       p.then(function (action) {
@@ -101,11 +105,13 @@ describe('Action Creators', function () {
   })
   describe('squeak', function () {
     it('should return an action object.', function () {
+      var sa = {type: 'source'}
       var a = {type: 'test'}
-      var s = echos.squeak(a)
+      var s = echos.squeak(a, sa)
       assert.equal(typeof s, 'object', 'does not return an action object.')
       assert.equal(s.type, echos.ActionTypeSqueak, 'invalid action type')
       assert.equal(s.action, a, 'invalid inner action.')
+      assert.equal(s.action.echoSource, sa, 'invalid source action.')
     })
   })
   describe('create', function () {

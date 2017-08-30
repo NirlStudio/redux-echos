@@ -31,15 +31,31 @@ function dispatchEchos () {
   }
 }
 
+function link (thunk, source) {
+  if (typeof thunk === 'function') {
+    return function (dispatch) {
+      return thunk(function (action) {
+        action.echoSource = source || null
+        action.echoThunk = thunk
+        dispatch(action)
+      })
+    }
+  } else {
+    thunk.echoSource = source || null
+    return thunk
+  }
+}
+
 // the inner squeak reflector.
-function reflect (dispatch, action, resolve) {
+function reflect (dispatch, action, source, resolve) {
+  var echoAction = link(action, source)
   var echo = {
     action: action, // for possible later manipulation.
     dispatch: resolve ? function () {
-      dispatch(action)
-      resolve(action)
+      dispatch(echoAction)
+      resolve(action) // always resolved to original action.
     } : function () {
-      dispatch(action)
+      dispatch(echoAction)
     }
   }
   if (echos) {
@@ -48,26 +64,27 @@ function reflect (dispatch, action, resolve) {
     echos = [echo]
     setTimeout(dispatchEchos)
   }
-  info('redux-echos: action is queued:', action)
+  info('redux-echos: action is queued:', echoAction)
 }
 // reflect a series of actions.
-function reflectAll (dispatch, actions) {
+function reflectAll (dispatch, actions, source) {
   for (var i = 0; i < actions.length; i++) {
-    reflect(dispatch, actions[i])
+    reflect(dispatch, actions[i], source)
   }
 }
 
 // the action for redux-thunk
-function thunk (action) {
+function thunk (action, source) {
   return function (dispatch) {
     return new Promise(function (resolve) {
-      reflect(dispatch, action, resolve)
+      reflect(dispatch, action, source, resolve)
     })
   }
 }
 
 // the action w/o redux-thunk
-function squeak (action) {
+function squeak (action, source) {
+  action.echoSource = source || null
   return {
     type: ActionType,
     action: action
@@ -75,8 +92,8 @@ function squeak (action) {
 }
 
 // the auto-selected echo action creator
-function create (action) {
-  return thunkEnabled ? thunk(action) : squeak(action)
+function create (action, source) {
+  return thunkEnabled ? thunk(action, source) : squeak(action, source)
 }
 
 function translatingWith (getState, reflecting, reflectingAll) {
@@ -88,9 +105,9 @@ function translatingWith (getState, reflecting, reflectingAll) {
         var echo = translators[i](action, translators[i].stateSelector
             ? translators[i].stateSelector(state) : state)
         if (Array.isArray(echo)) {
-          reflectingAll(echo)
+          reflectingAll(echo, action)
         } else if (echo) {
-          reflecting(echo)
+          reflecting(echo, action)
         }
       }
     }
@@ -113,7 +130,7 @@ function middleware (store) {
     return function (action) {
       if (action.type === ActionType) {
         // queue & suppress.
-        reflecting(action.action)
+        reflecting(action.action, action.source)
       } else {
         // translate & forward
         translating(action)

@@ -28,11 +28,11 @@ An action, in its reducer, may spawn other action(s) now.
 import { echo } from 'redux-echos'
 
 const reducer = (state, action) => {
-  if (action.type === 'The/Awesome/ACTION') {
+  if (action.type === 'The/Source/ACTION') {
     echo({
-      type: 'Do/This/Later',
+      type: 'An/Echo/ACTION',
       some: state.an.important.value
-    })
+    }, action)
     return {...state, key: 'new-value'}
   }
   return state
@@ -46,27 +46,28 @@ A state may associate itself with another one which it depends on.
 import { register } from 'redux-echos'
 
 const translator = (action, state) => ({
-  type: 'I/Caught/YOU',
+  type: 'An/Echo/ACTION',
   some: state.an.important.value
 })
 
-register('The/Awesome/ACTION', translator)
+register('The/Source/ACTION', translator)
 ~~~~
 or apply a selector to help the translator
 ~~~~javascript
 const translator = (action, value) => ({
-  type: 'I/Caught/YOU',
+  type: 'An/Echo/ACTION',
   some: value
 })
 
 const selector = state => state.an.important.value
 
-register('The/Awesome/ACTION', translator, selector)
+register('The/Source/ACTION', translator, selector)
 ~~~~
 
 ## Coding Practice
 - w/ or w/o redux-thunk
 - reducer-centred code organising.
+- analyse action flow.
 
 ## API Reference
 ### Basics
@@ -84,13 +85,13 @@ register a translator function.
 ### Advanced
 They should be used with a little bit carefulness.
 
-#### thunk(action) => (dispatch)
-explicitly create a thunk as the echo action.
+#### thunk(action[, source]) => (dispatch)
+explicitly create a thunk as the echo action for an optional source action.
 
-#### squeak(action)
-explicitly create an common object echo action.
+#### squeak(action[, source])
+explicitly create an common object echo action for an optional source action.
 
-#### create(action)
+#### create(action[, source])
 automatically create a thunk or an object by the existence of redux-thunk.
 
 #### echos()
