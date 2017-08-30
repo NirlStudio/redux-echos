@@ -1,6 +1,6 @@
 {
   "name": "redux-echos",
-  "version": "0.7.1",
+  "version": "0.8.1",
   "description": "A lightweight redux middleware to decouple & serialise the dependency of states.",
   "main": "index.js",
   "scripts": {
