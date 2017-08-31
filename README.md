@@ -66,6 +66,7 @@ _works exactly like_
 echo(A1); echo(A3); echo(A3); ...
 ~~~~
 _note-1: currently, redux-echos only supports redux-thunk._
+
 _note-2: if you need more complex workflow like feature of forking & merging, please refer to [redux-action-flow](https://github.com/NirlStudio/redux-action-flow)_
 
 ### Action Translating
