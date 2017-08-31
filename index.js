@@ -32,16 +32,24 @@ function dispatchEchos () {
 }
 
 function link (thunk, source) {
-  if (typeof thunk === 'function') {
-    return function (dispatch) {
+  if (typeof thunk === 'function') { // a action thunk
+    var linkedThunk = function (dispatch) {
       return thunk(function (action) {
-        action.echoSource = source || null
-        action.echoThunk = thunk
+        // try to skip wrapper thunk.
+        action.echoThunk = thunk.echoThunk || thunk
+        if (typeof action.echoSource === 'undefined') {
+          action.echoSource = source || null
+        }
         dispatch(action)
       })
     }
-  } else {
-    thunk.echoSource = source || null
+    // wrapper thunk should expose the real thunk
+    linkedThunk.echoThunk = thunk
+    return linkedThunk
+  } else { // a common action object
+    if (typeof thunk.echoSource === 'undefined') {
+      thunk.echoSource = source || null
+    }
     return thunk
   }
 }
@@ -170,9 +178,92 @@ middleware.echos = function () {
   return echos
 }
 // create & dispatch an echo action to the default store.
-middleware.echo = function (action) {
-  return dispatching(create(action))
+middleware.echo = function (action, source) {
+  dispatching(create(action, source))
+  return action
 }
+
+function chainTerminator (action) {
+  warn('redux-echos: chain reaction has completed, so action is abandoned:', action)
+  return chainTerminator
+}
+
+function chainReactor (thunk) {
+  var actionChain = []
+  // extend a thunk to connect subsequential actions
+  var extend = function (thunk) {
+    var extendedThunk = function (dispatch) {
+      return thunk(function (action) {
+        if (!actionChain || !actionChain.length) {
+          return dispatch(action)
+        }
+        if (typeof action === 'function') {
+          // continue to wait a real action.
+          return dispatch(extend(action))
+        }
+        // ending of current action chain.
+        var actions = actionChain
+        actionChain = null // prevent any new actions.
+        var result = dispatch(action)
+        // fix up the source action for the first action in chain.
+        actions[0] = link(actions[0], action)
+        for (var i = 0; i < actions.length; i++) {
+          dispatching(actions[i])
+        }
+        return result
+      })
+    }
+    extendedThunk.echoThunk = thunk
+    return extendedThunk
+  }
+  // connect a subsequential action into current chain.
+  var connect = function (action) {
+    if (!actionChain) {
+      // invalid operation: actions have been completed.
+      return chainTerminator(action)
+    }
+    if (!action) {
+      // terminate current chain and return the last action.
+      return actionChain.length > 0 ? actionChain[actionChain.length - 1] : thunk
+    }
+    if (actionChain.length > 0) {
+      // link the source action to current action
+      action = link(action, actionChain[actionChain.length - 1])
+    }
+    if (typeof action === 'function') { // to create a new chain for a thunk
+      var chain = chainReactor(action)
+      actionChain.push(chain.thunk)
+      return chain.connect // switch to the connector of new chain
+    } else { // use current reactor for a common action object.
+      actionChain.push(action)
+      return connect // keep using current connector
+    }
+  }
+  // compose the chain reactor
+  return {
+    thunk: extend(thunk),
+    connect: connect
+  }
+}
+
+// create & dispatch an echo action to the default store.
+middleware.chain = function (action, source) {
+  if (typeof action === 'function') { // action is a thunk
+    var chain = chainReactor(action)
+    dispatching(create(chain.thunk, source))
+    return chain.connect
+  } else { // TODO: support redux-promise
+    dispatching(create(action, source))
+    return function (nextAction) {
+      if (nextAction) {
+        return middleware.chain(nextAction, action)
+      } else {
+        return action // terminate current chain and return the last action.
+      }
+    }
+  }
+}
+
 // expose translators to be manipulated, even it's not suggested generally.
 middleware.translators = function (actionType) {
   return actionType ? (translatorMap[actionType] || []) : translatorMap

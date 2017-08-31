@@ -12,7 +12,7 @@ It helps to deal with the to-be-laterly-dispatched actions.
 ## Examples
 ### First of First, but not actually
 Apply echos as a middleware to the redux store.
-~~~~javascript
+~~~~js
 import echos from 'redux-echos'
 import { createStore, applyMiddleware } from 'redux'
 
@@ -24,7 +24,7 @@ _note-2: If note-1 does not make clear sense for you, applying the middleware is
 
 ### Action Forking
 An action, in its reducer, may spawn other action(s) now.
-~~~~javascript
+~~~~js
 import { echo } from 'redux-echos'
 
 const reducer = (state, action) => {
@@ -40,9 +40,37 @@ const reducer = (state, action) => {
 ~~~~
 _And of course, the function echo() can also be called out of a reducer to queue an action._
 
+### Action Chain
+Instead of emitting one or several independent actions, you can make a series of actions, which can have thunks, to be dispatched sequentially.
+~~~~js
+import { chain } from 'redux-echos'
+
+const reducer = (state, action) => {
+  if (action.type === 'User/Is/AUTHENTICATED') {
+    chain(
+      NetworkActions.loadUserProfile(), action
+    )(
+      NetworkActions.loadFriendProfiles()
+    )
+    return {...state, key: 'new-value'}
+  }
+  return state
+}
+~~~~
+_And if all actions in a chain are common actions, like_
+~~~~js
+chain(A1)(A2)(A3)...
+~~~~
+_works exactly like_
+~~~~js
+echo(A1); echo(A3); echo(A3); ...
+~~~~
+_note-1: currently, redux-echos only supports redux-thunk._
+_note-2: if you need more complex workflow like feature of forking & merging, please refer to [redux-action-flow](https://github.com/NirlStudio/redux-action-flow)_
+
 ### Action Translating
 A state may associate itself with another one which it depends on.
-~~~~javascript
+~~~~js
 import { register } from 'redux-echos'
 
 const translator = (action, state) => ({
@@ -53,7 +81,7 @@ const translator = (action, state) => ({
 register('The/Source/ACTION', translator)
 ~~~~
 or apply a selector to help the translator
-~~~~javascript
+~~~~js
 const translator = (action, value) => ({
   type: 'An/Echo/ACTION',
   some: value

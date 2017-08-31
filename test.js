@@ -1,4 +1,6 @@
 'use strict'
+var redux = require('redux')
+var thunk = require('redux-thunk').default
 
 var assert = require('assert')
 var echos = require('./index')
@@ -41,6 +43,9 @@ describe('module', function () {
     })
     it('should have function echo', function () {
       assert.equal(typeof echos.echo, 'function')
+    })
+    it('should have function chain', function () {
+      assert.equal(typeof echos.chain, 'function')
     })
     it('should have function translators', function () {
       assert.equal(typeof echos.translators, 'function')
@@ -152,6 +157,140 @@ describe('Action Creators', function () {
       })(function () {})
       echos.echo({type: 'test'})
       assert.equal(counter, 1)
+    })
+  })
+  describe('chain', function () {
+    it('should connect an action after an action.', function () {
+      redux.createStore(function (state, action) {
+        return typeof state === 'undefined' ? null : state
+      }, null, redux.applyMiddleware(thunk, echos))
+
+      var a1 = {type: 'action1'}
+      var a2 = {type: 'action2'}
+
+      echos.chain(a1)(a2)
+      assert.equal(a1.echoSource, null, 'source action 1 is invalid')
+      assert.equal(a2.echoSource, a1, 'source action 2 is invalid')
+    })
+    it('should connect an thunk after an action.', function (done) {
+      redux.createStore(function (state, action) {
+        return typeof state === 'undefined' ? null : state
+      }, redux.applyMiddleware(thunk, echos))
+
+      var a1 = {type: 'action1'}
+      var a2 = {type: 'action2'}
+      var t0 = function (dispatch) {
+        return new Promise(function (resolve) {
+          setTimeout(function () {
+            dispatch(a2)
+            resolve(a2)
+            assert.equal(a1.echoSource, null, 'after: source action 1 is invalid')
+            assert.equal(a2.echoSource, a1, 'after: source action 2 is invalid')
+            assert.equal(a2.echoThunk, t0, 'after: source thunk 2 is invalid')
+            done()
+          })
+        })
+      }
+
+      echos.chain(a1)(t0)
+      assert.equal(a1.echoSource, null, 'before: source action 1 is invalid')
+      assert.equal(a2.echoSource, null, 'before: source action 2 is invalid')
+    })
+
+    it('should connect an action after an thunk.', function (done) {
+      redux.createStore(function (state, action) {
+        return typeof state === 'undefined' ? null : state
+      }, redux.applyMiddleware(thunk, echos))
+
+      var a1 = {type: 'action1'}
+      var a2 = {type: 'action2'}
+      var t0 = function (dispatch) {
+        return new Promise(function (resolve) {
+          setTimeout(function () {
+            dispatch(a1)
+            resolve(a1)
+            assert.equal(a1.echoSource, null, 'after: source action 1 is invalid')
+            assert.equal(a1.echoThunk, t0, 'after: source thunk 1 is invalid')
+            assert.equal(a2.echoSource, a1, 'after: source action 2 is invalid')
+            assert.equal(a2.echoThunk, null, 'after: source thunk 2 is invalid')
+            done()
+          })
+        })
+      }
+
+      echos.chain(t0)(a2)
+      assert.equal(a1.echoSource, null, 'before: source action 1 is invalid')
+      assert.equal(a2.echoSource, null, 'before: source action 2 is invalid')
+    })
+    it('should connect an thunk after an thunk.', function (done) {
+      redux.createStore(function (state, action) {
+        return typeof state === 'undefined' ? null : state
+      }, redux.applyMiddleware(thunk, echos))
+
+      var a1 = {type: 'action1'}
+      var a2 = {type: 'action2'}
+      var t1 = function (dispatch) {
+        return new Promise(function (resolve) {
+          setTimeout(function () {
+            dispatch(a1)
+            resolve(a1)
+            assert.equal(a1.echoSource, null, 'after: source action 1 is invalid')
+            assert.equal(a1.echoThunk, t1, 'after: source thunk 1 is invalid')
+          })
+        })
+      }
+      var t2 = function (dispatch) {
+        return new Promise(function (resolve) {
+          setTimeout(function () {
+            dispatch(a2)
+            resolve(a2)
+            assert.equal(a2.echoSource, a1, 'after: source action 2 is invalid')
+            assert.equal(a2.echoThunk, t2, 'after: source thunk 2 is invalid')
+            done()
+          })
+        })
+      }
+
+      echos.chain(t1)(t2)
+      assert.equal(a1.echoSource, null, 'before: source action 1 is invalid')
+      assert.equal(a2.echoSource, null, 'before: source action 2 is invalid')
+    })
+    it('should work for a composite action chain.', function (done) {
+      redux.createStore(function (state, action) {
+        return typeof state === 'undefined' ? null : state
+      }, redux.applyMiddleware(thunk, echos))
+
+      var a1 = {type: 'action1'}
+      var a2 = {type: 'action2'}
+      var a3 = {type: 'action3'}
+      var a4 = {type: 'action4'}
+      var t1 = function (dispatch) {
+        return new Promise(function (resolve) {
+          setTimeout(function () {
+            dispatch(a1)
+            resolve(a1)
+            assert.equal(a1.echoSource, null, 'after: source action 1 is invalid')
+            assert.equal(a1.echoThunk, t1, 'after: source thunk 1 is invalid')
+          })
+        })
+      }
+      var t2 = function (dispatch) {
+        return new Promise(function (resolve) {
+          setTimeout(function () {
+            dispatch(a2)
+            resolve(a2)
+            assert.equal(a2.echoSource, a3, 'after: source action 2 is invalid')
+            assert.equal(a2.echoThunk, t2, 'after: source thunk 2 is invalid')
+            assert.equal(a3.echoSource, a1, 'after: source action 3 is invalid')
+            assert.equal(a4.echoSource, a2, 'after: source action 4 is invalid')
+            done()
+          })
+        })
+      }
+
+      echos.chain(t1)(a3)(t2)(a4)
+      assert.equal(a1.echoSource, null, 'before: source action 1 is invalid')
+      assert.equal(a2.echoSource, null, 'before: source action 2 is invalid')
     })
   })
 })
