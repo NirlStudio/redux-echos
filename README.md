@@ -57,14 +57,18 @@ const reducer = (state, action) => {
   return state
 }
 ~~~~
-_And if all actions in a chain are common actions, like_
+And if all actions in a chain are common object actions, like:
 ~~~~js
 chain(A1)(A2)(A3)...
 ~~~~
-_works exactly like_
+works exactly like:
 ~~~~js
-echo(A1); echo(A3); echo(A3); ...
+echo(A1); echo(A2, A1); echo(A3, A2); ...
 ~~~~
+But if there is a thunk, e.g: A1, then A2 will only be dispatched after A1's resolved action has been dispatched.
+
+If the resolved action is still a thunk, A2 will continue to wait recursively until a final action is dispatched.
+
 _note-1: currently, redux-echos only supports redux-thunk._
 
 _note-2: if you need more complex workflow like feature of forking & merging, please refer to [redux-action-flow](https://github.com/NirlStudio/redux-action-flow)_
@@ -105,7 +109,10 @@ They should be enough for common scenarios.
 #### default exports: middleware(store) => (next) => (action)
 the middleware
 
-#### echo(action)
+#### echo(action, source)
+generate an echo action for an target action.
+
+#### chain(action[, source])
 generate an echo action for an target action.
 
 #### register(actionType, translator[, selector])
