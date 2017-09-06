@@ -1,15 +1,13 @@
 'use strict'
 var redux = require('redux')
-var thunk = require('redux-thunk').default
-
 var assert = require('assert')
 var echos = require('./index')
 
-var hasThunk
+var thunk
 try {
-  hasThunk = require('redux-thunk')
+  thunk = require('redux-thunk').default
 } catch (e) {
-  hasThunk = false
+  thunk = null
 }
 
 describe('module', function () {
@@ -61,7 +59,7 @@ describe('module', function () {
 
 describe('Action Mode', function () {
   describe('Automatic', function () {
-    hasThunk ? it('should enable thunk w/ redux-thunk.', function () {
+    thunk ? it('should enable thunk w/ redux-thunk.', function () {
       assert.equal(echos.thunkEnabled(), true)
     }) : it('should disable thunk w/o redux-thunk.', function () {
       assert.equal(echos.thunkEnabled(), false)
