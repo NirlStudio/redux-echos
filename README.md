@@ -71,19 +71,30 @@ If the resolved action is still a thunk, A2 will continue to wait recursively un
 
 _note-1: currently, redux-echos only supports redux-thunk._
 
-_note-2: if you need more complex workflow like feature of forking & merging, please refer to [redux-action-flow](https://github.com/NirlStudio/redux-action-flow)_
+_note-2: if the source action is not empty, for example:_
+~~~~js
+chain(A1, A0)(A2)(A3)...
+~~~~
+_can be coded as:_
+~~~~js
+import { follow } from 'redux-echos'
+follow(A0)(A1)(A2)(A3) ...
+~~~~
+_since the A0 is taken as the source action, follow(...) will not try to dispatch it._
+
+_note-3: if you need more complex workflow like feature of forking & merging, please refer to [redux-action-flow](https://github.com/NirlStudio/redux-action-flow)_
 
 ### Action Translating
 A state may associate itself with another one which it depends on.
 ~~~~js
-import { register } from 'redux-echos'
+import { listen } from 'redux-echos'
 
 const translator = (action, state) => ({
   type: 'An/Echo/ACTION',
   some: state.an.important.value
 })
 
-register('The/Source/ACTION', translator)
+listen('The/Source/ACTION', translator)
 ~~~~
 or apply a selector to help the translator
 ~~~~js
@@ -94,7 +105,7 @@ const translator = (action, value) => ({
 
 const selector = state => state.an.important.value
 
-register('The/Source/ACTION', translator, selector)
+listen('The/Source/ACTION', translator, selector)
 ~~~~
 
 ## Coding Practice
@@ -113,10 +124,13 @@ the middleware
 generate an echo action for an target action.
 
 #### chain(action[, source])
-generate an echo action for an target action.
+create an action chain from an action with an optional source action.
 
-#### register(actionType, translator[, selector])
-register a translator function.
+#### follow(source)
+create an action chain from an source action.
+
+#### listen(actionType, translator[, selector])
+listen to a type of action to apply a translator to generate none, one or more forked actions.
 
 ### Advanced
 They should be used with a little bit carefulness.
@@ -143,9 +157,9 @@ explicitly to enable thunk mode.
 explicitly to disable thunk mode.
 
 #### translators([actionType])
-peek all registered translators (as an object of action-type -> array-of-translator map) or an array of translators for the actionType.
+peek all listening translators (as an object of action-type -> array-of-translator map) or an array of translators for the actionType.
 
-#### unregister(translator[, actionType])
+#### unlisten(translator[, actionType])
 remove a translator from all actions or a particular action.
 
 ## Tour of Implementation

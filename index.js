@@ -264,12 +264,19 @@ middleware.chain = function (action, source) {
   }
 }
 
+// a more readable version of chain when souce exists.
+middleware.follow = function (source) {
+  return function (action) {
+    return middleware.chain(action, source)
+  }
+}
+
 // expose translators to be manipulated, even it's not suggested generally.
 middleware.translators = function (actionType) {
   return actionType ? (translatorMap[actionType] || []) : translatorMap
 }
 // register a translator for a particular action.
-middleware.register = function (actionType, translator, selector) {
+middleware.listen = function (actionType, translator, selector) {
   var list = translatorMap[actionType]
   if (!list) {
     translatorMap[actionType] = list = []
@@ -283,7 +290,7 @@ middleware.register = function (actionType, translator, selector) {
   }
 }
 // unregister a translator for an action or for all actions.
-middleware.unregister = function (translator, actionType) {
+middleware.unlisten = function (translator, actionType) {
   var translators = Array.isArray(translator) ? translator : [translator]
   var actionTypes = actionType ? [actionType]
     : Object.getOwnPropertyNames(translatorMap)

@@ -45,14 +45,17 @@ describe('module', function () {
     it('should have function chain', function () {
       assert.equal(typeof echos.chain, 'function')
     })
+    it('should have function follow', function () {
+      assert.equal(typeof echos.follow, 'function')
+    })
     it('should have function translators', function () {
       assert.equal(typeof echos.translators, 'function')
     })
-    it('should have function register', function () {
-      assert.equal(typeof echos.register, 'function')
+    it('should have function listen', function () {
+      assert.equal(typeof echos.listen, 'function')
     })
-    it('should have function unregister', function () {
-      assert.equal(typeof echos.unregister, 'function')
+    it('should have function unlisten', function () {
+      assert.equal(typeof echos.unlisten, 'function')
     })
   })
 })
@@ -291,15 +294,42 @@ describe('Action Creators', function () {
       assert.equal(a2.echoSource, null, 'before: source action 2 is invalid')
     })
   })
+  describe('follow', function () {
+    it('should create a chain without a source action.', function () {
+      redux.createStore(function (state, action) {
+        return typeof state === 'undefined' ? null : state
+      }, null, redux.applyMiddleware(thunk, echos))
+
+      var a1 = {type: 'action1'}
+      var a2 = {type: 'action2'}
+
+      echos.follow()(a1)(a2)
+      assert.equal(a1.echoSource, null, 'source action 1 is invalid')
+      assert.equal(a2.echoSource, a1, 'source action 2 is invalid')
+    })
+    it('should create a chain with a source action.', function () {
+      redux.createStore(function (state, action) {
+        return typeof state === 'undefined' ? null : state
+      }, null, redux.applyMiddleware(thunk, echos))
+
+      var a0 = {type: 'action0'}
+      var a1 = {type: 'action1'}
+      var a2 = {type: 'action2'}
+
+      echos.follow(a0)(a1)(a2)
+      assert.equal(a1.echoSource, a0, 'source action 1 is invalid')
+      assert.equal(a2.echoSource, a1, 'source action 2 is invalid')
+    })
+  })
 })
 
 describe('Translators', function () {
   var t0 = function () {}
   var t1 = function () {}
   var t2 = function () {}
-  describe('register', function () {
+  describe('listen', function () {
     it('should accept a function as translator', function () {
-      echos.register('test', t0)
+      echos.listen('test', t0)
       var m = echos.translators()
       var l = echos.translators('test')
       assert.equal(m['test'], l, 'wrong translator list.')
@@ -308,7 +338,7 @@ describe('Translators', function () {
       assert.equal(l[0], t0, 'invalid translator.')
     })
     it('should accept an array of function as translators', function () {
-      echos.register('test', [t1, t2])
+      echos.listen('test', [t1, t2])
 
       var m = echos.translators()
       var l = echos.translators('test')
@@ -320,9 +350,9 @@ describe('Translators', function () {
       assert.equal(l[2], t2, 'invalid translator (2).')
     })
   })
-  describe('unregister', function () {
-    it('should accept a translator function to unregister', function () {
-      echos.unregister(t1)
+  describe('unlisten', function () {
+    it('should accept a translator function to remove', function () {
+      echos.unlisten(t1)
 
       var m = echos.translators()
       var l = echos.translators('test')
@@ -332,8 +362,8 @@ describe('Translators', function () {
       assert.equal(l[0], t0, 'invalid translator (0).')
       assert.equal(l[1], t2, 'invalid translator (1).')
     })
-    it('should accept an array of translator functions to unregister', function () {
-      echos.unregister([t0, t2])
+    it('should accept an array of translator functions to remove', function () {
+      echos.unlisten([t0, t2])
 
       var m = echos.translators()
       var l = echos.translators('test')
@@ -341,22 +371,22 @@ describe('Translators', function () {
       assert(Array.isArray(l), 'invalid translator list.')
       assert.equal(l.length, 0, 'wrong translator number.')
     })
-    it('should unregister translator for a specific action type', function () {
-      echos.register('test1', [t0, t1])
-      echos.register('test2', [t0, t2])
+    it('should remove a translator for a specific action type', function () {
+      echos.listen('test1', [t0, t1])
+      echos.listen('test2', [t0, t2])
       var l1 = echos.translators('test1')
       var l2 = echos.translators('test2')
       assert.equal(l1.length, 2, 'invalid translators for test1')
       assert.equal(l2.length, 2, 'invalid translators for test2')
 
-      echos.unregister(t0, 'test2')
+      echos.unlisten(t0, 'test2')
       assert.equal(l1.length, 2, 'stage1: invalid translator number for test1')
       assert.equal(l1[0], t0, 'stage1: invalid test1 (0)')
       assert.equal(l1[1], t1, 'stage1: invalid test1 (1)')
       assert.equal(l2.length, 1, 'stage1: invalid translator number for test2')
       assert.equal(l2[0], t2, 'stage1: invalid test2 (0)')
 
-      echos.unregister([t1, t2], 'test1')
+      echos.unlisten([t1, t2], 'test1')
       assert.equal(l1.length, 1, 'stage2: invalid translator number for test1')
       assert.equal(l1[0], t0, 'stage2: invalid test1 (0)')
       assert.equal(l2.length, 1, 'stage2: invalid translator number for test2')
@@ -387,7 +417,7 @@ describe('Middleware', function () {
   })
   describe('receiving a common action', function () {
     it('may translate it to no echo.', function () {
-      echos.register('SRC_ACTION1', function (action, state) {
+      echos.listen('SRC_ACTION1', function (action, state) {
         assert.equal(typeof action, 'object', 'invalid action.')
         assert.equal(typeof state, 'object', 'invalid state object.')
       })
@@ -401,7 +431,7 @@ describe('Middleware', function () {
     })
     it('may translate it to an echo action.', function (done) {
       var a = {type: 'echo', value: 'a1'}
-      echos.register('SRC_ACTION2', function (action, state) {
+      echos.listen('SRC_ACTION2', function (action, state) {
         assert.equal(typeof action, 'object', 'invalid action.')
         assert.equal(state, 'value', 'invalid state value.')
         return a
@@ -426,7 +456,7 @@ describe('Middleware', function () {
     it('may translate it to echo actions.', function (done) {
       var a = {type: 'echo', value: 'a2'}
       var b = {type: 'echo', value: 'b2'}
-      echos.register('SRC_ACTION3', function (action, state) {
+      echos.listen('SRC_ACTION3', function (action, state) {
         assert.equal(typeof action, 'object', 'invalid action.')
         assert.equal(typeof state, 'object', 'invalid state object.')
         return [a, b]
