@@ -188,7 +188,7 @@ function chainTerminator (action) {
   return chainTerminator
 }
 
-function chainReactor (thunk) {
+function chainReactor (thunk, source) {
   var actionChain = []
   // extend a thunk to connect subsequential actions
   var extend = function (thunk) {
@@ -199,7 +199,7 @@ function chainReactor (thunk) {
         }
         if (typeof action === 'function') {
           // continue to wait a real action.
-          return dispatch(extend(action))
+          return dispatch(extend(link(action, source)))
         }
         // ending of current action chain.
         var actions = actionChain
@@ -249,7 +249,7 @@ function chainReactor (thunk) {
 // create & dispatch an echo action to the default store.
 middleware.chain = function (action, source) {
   if (typeof action === 'function') { // action is a thunk
-    var chain = chainReactor(action)
+    var chain = chainReactor(action, source)
     dispatching(create(chain.thunk, source))
     return chain.connect
   } else { // TODO: support redux-promise
