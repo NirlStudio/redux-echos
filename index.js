@@ -33,25 +33,29 @@ function dispatchEchos () {
 
 function link (thunk, source) {
   if (typeof thunk === 'function') { // a action thunk
+    if (thunk.name === 'linkedThunk' && thunk.originalThunk) {
+      // avoid to re-link a linkedThunk wrapper.
+      return thunk
+    }
+    // wrap the original thunk to attach tracing information to final action.
     var linkedThunk = function (dispatch) {
       return thunk(function (action) {
-        // try to skip wrapper thunk.
-        action.echoThunk = thunk.echoThunk || thunk
-        if (typeof action.echoSource === 'undefined') {
-          action.echoSource = source || null
-        }
-        dispatch(action)
+        // always attach the source thunk to the action.
+        action.echoThunk = thunk.originalThunk || thunk
+        // wrap a thunk or attach the source action to a common action.
+        dispatch(link(action, source))
       })
     }
-    // wrapper thunk should expose the real thunk
-    linkedThunk.echoThunk = thunk
+    // wrapper thunk should expose the original thunk
+    linkedThunk.originalThunk = thunk
     return linkedThunk
-  } else { // a common action object
-    if (typeof thunk.echoSource === 'undefined') {
-      thunk.echoSource = source || null
-    }
-    return thunk
   }
+  // the thunk is a common action object
+  if (typeof thunk.echoSource === 'undefined') {
+    // an app given source will be respected.
+    thunk.echoSource = source || null
+  }
+  return thunk
 }
 
 // the inner squeak reflector.
@@ -213,7 +217,7 @@ function chainReactor (thunk) {
         return result
       })
     }
-    extendedThunk.echoThunk = thunk
+    extendedThunk.originalThunk = thunk
     return extendedThunk
   }
   // connect a subsequential action into current chain.

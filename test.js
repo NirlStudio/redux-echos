@@ -173,7 +173,7 @@ describe('Action Creators', function () {
       assert.equal(a1.echoSource, null, 'source action 1 is invalid')
       assert.equal(a2.echoSource, a1, 'source action 2 is invalid')
     })
-    it('should connect an thunk after an action.', function (done) {
+    it('should connect a thunk after an action.', function (done) {
       redux.createStore(function (state, action) {
         return typeof state === 'undefined' ? null : state
       }, redux.applyMiddleware(thunk, echos))
@@ -198,7 +198,7 @@ describe('Action Creators', function () {
       assert.equal(a2.echoSource, null, 'before: source action 2 is invalid')
     })
 
-    it('should connect an action after an thunk.', function (done) {
+    it('should connect an action after a thunk.', function (done) {
       redux.createStore(function (state, action) {
         return typeof state === 'undefined' ? null : state
       }, redux.applyMiddleware(thunk, echos))
@@ -223,7 +223,7 @@ describe('Action Creators', function () {
       assert.equal(a1.echoSource, null, 'before: source action 1 is invalid')
       assert.equal(a2.echoSource, null, 'before: source action 2 is invalid')
     })
-    it('should connect an thunk after an thunk.', function (done) {
+    it('should connect a thunk after a thunk.', function (done) {
       redux.createStore(function (state, action) {
         return typeof state === 'undefined' ? null : state
       }, redux.applyMiddleware(thunk, echos))
